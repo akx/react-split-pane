@@ -273,7 +273,7 @@ export function SplitPane(props: SplitPaneProps) {
   );
 
   // Resizer hook
-  const { isDragging, currentSizes, handlePointerDown } = useResizer({
+  const { isDragging, currentSizes, getDividerHandlers } = useResizer({
     direction,
     sizes: paneSizes,
     minSizes,
@@ -297,45 +297,6 @@ export function SplitPane(props: SplitPaneProps) {
     onResizeEnd,
   });
 
-  // Deprecated handlers for backwards compatibility
-  // These delegate to the pointer handler so custom dividers using old props still work
-  const createMouseDownHandler = useCallback(
-    (index: number) => (e: React.MouseEvent) => {
-      // Create a synthetic pointer event from the mouse event
-      const pointerEvent = {
-        ...e,
-        pointerId: 1,
-        pointerType: 'mouse',
-        nativeEvent: e.nativeEvent,
-      } as unknown as React.PointerEvent;
-      handlePointerDown(index)(pointerEvent);
-    },
-    [handlePointerDown]
-  );
-
-  const createTouchStartHandler = useCallback(
-    (index: number) => (e: React.TouchEvent) => {
-      const touch = e.touches[0];
-      if (!touch) return;
-      // Create a synthetic pointer event from the touch event
-      const pointerEvent = {
-        ...e,
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-        pointerId: touch.identifier,
-        pointerType: 'touch',
-        nativeEvent: e.nativeEvent,
-      } as unknown as React.PointerEvent;
-      handlePointerDown(index)(pointerEvent);
-    },
-    [handlePointerDown]
-  );
-
-  // Touch end is now a no-op since pointer events handle cleanup
-  const handleTouchEnd = useCallback(() => {
-    // No-op - pointer events handle the end of drag
-  }, []);
-
   // Container styles
   const containerStyle: CSSProperties = {
     display: 'flex',
@@ -351,7 +312,7 @@ export function SplitPane(props: SplitPaneProps) {
 
   // Render panes and dividers
   let elements: ReactElement[] | null = null;
-  if(containerSize > 0 && paneCount >= MIN_PANES) {
+  if (containerSize > 0 && paneCount >= MIN_PANES) {
     elements = [];
 
     for (let index = 0; index < paneCount; index++) {
@@ -385,10 +346,7 @@ export function SplitPane(props: SplitPaneProps) {
             index={index}
             isDragging={isDragging}
             disabled={!resizable}
-            onPointerDown={handlePointerDown(index)}
-            onMouseDown={createMouseDownHandler(index)}
-            onTouchStart={createTouchStartHandler(index)}
-            onTouchEnd={handleTouchEnd}
+            {...getDividerHandlers(index)}
             onKeyDown={handleKeyDown(index)}
             className={dividerClassName}
             style={dividerStyle}

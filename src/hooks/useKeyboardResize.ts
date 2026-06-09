@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Direction, ResizeEvent } from '../types';
 import { calculateDraggedSizes, clamp } from '../utils/calculations';
 import { announce, formatSizeForAnnouncement } from '../utils/accessibility';
@@ -51,8 +51,51 @@ export function useKeyboardResize(options: UseKeyboardResizeOptions) {
   // Track sizes at start of keyboard interaction for Escape to restore
   const initialSizesRef = useRef<number[] | null>(null);
 
-  const handleKeyDown = useCallback(
-    (dividerIndex: number) => (e: React.KeyboardEvent) => {
+  // Live values so the per-divider handlers can stay referentially stable
+  // across renders instead of being recreated whenever sizes change.
+  const stateRef = useRef({
+    direction,
+    sizes,
+    minSizes,
+    maxSizes,
+    step,
+    largeStep,
+    onResize,
+    onResizeEnd,
+  });
+  stateRef.current = {
+    direction,
+    sizes,
+    minSizes,
+    maxSizes,
+    step,
+    largeStep,
+    onResize,
+    onResizeEnd,
+  };
+
+  // Per-divider handlers, cached by index so each render hands the same
+  // function identity back to the dividers.
+  const handlerCacheRef = useRef<Map<number, (e: React.KeyboardEvent) => void>>(
+    new Map()
+  );
+
+  const handleKeyDown = useCallback((dividerIndex: number) => {
+    const cache = handlerCacheRef.current;
+    const cached = cache.get(dividerIndex);
+    if (cached) return cached;
+
+    const handler = (e: React.KeyboardEvent) => {
+      const {
+        direction,
+        sizes,
+        minSizes,
+        maxSizes,
+        step,
+        largeStep,
+        onResize,
+        onResizeEnd,
+      } = stateRef.current;
       const isHorizontal = direction === 'horizontal';
       const moveKeys = isHorizontal
         ? ['ArrowLeft', 'ArrowRight']
@@ -199,18 +242,21 @@ export function useKeyboardResize(options: UseKeyboardResizeOptions) {
           )}`
         );
       }
-    },
-    [
-      direction,
-      sizes,
-      minSizes,
-      maxSizes,
-      step,
-      largeStep,
-      onResize,
-      onResizeEnd,
-    ]
-  );
+    };
+
+    cache.set(dividerIndex, handler);
+    return handler;
+  }, []);
+
+  // Drop cached handlers for dividers that no longer exist, so repeatedly
+  // growing and shrinking the pane count can't leak entries.
+  const dividerCount = Math.max(0, sizes.length - 1);
+  useEffect(() => {
+    const cache = handlerCacheRef.current;
+    for (const index of cache.keys()) {
+      if (index >= dividerCount) cache.delete(index);
+    }
+  }, [dividerCount]);
 
   return { handleKeyDown };
 }
