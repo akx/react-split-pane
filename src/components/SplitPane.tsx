@@ -350,14 +350,11 @@ export function SplitPane(props: SplitPaneProps) {
   const containerClassName = cn(DEFAULT_CLASSNAME, direction, className);
 
   // Render panes and dividers
-  const renderChildren = () => {
-    if (paneCount < MIN_PANES) {
-      return null;
-    }
+  let elements: ReactElement[] | null = null;
+  if(containerSize > 0 && paneCount >= MIN_PANES) {
+    elements = [];
 
-    const elements: JSX.Element[] = [];
-
-    for (let index = 0; index < paneConfigs.length; index++) {
+    for (let index = 0; index < paneCount; index++) {
       const config = paneConfigs[index]!;
       const paneSize = currentSizes[index] ?? 0;
 
@@ -402,9 +399,7 @@ export function SplitPane(props: SplitPaneProps) {
         );
       }
     }
-
-    return elements;
-  };
+  }
 
   return (
     <div
@@ -412,7 +407,7 @@ export function SplitPane(props: SplitPaneProps) {
       className={containerClassName}
       style={containerStyle}
     >
-      {containerSize > 0 && renderChildren()}
+      {elements}
     </div>
   );
 }
