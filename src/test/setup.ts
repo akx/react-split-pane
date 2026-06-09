@@ -66,7 +66,7 @@ const resizeObservers: ObserverEntry[] = [];
 
 // Helper to trigger resize on observed elements
 export function triggerResize(width: number, height: number) {
-  resizeObservers.forEach(({ callback, observer, target }) => {
+  for (const { callback, observer, target } of resizeObservers) {
     const mockEntry = {
       target,
       contentRect: {
@@ -86,7 +86,7 @@ export function triggerResize(width: number, height: number) {
     } as unknown as ResizeObserverEntry;
 
     callback([mockEntry], observer);
-  });
+  }
 }
 
 // Clear observers between tests

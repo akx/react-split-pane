@@ -106,14 +106,14 @@ export function SplitPane(props: SplitPaneProps) {
     const mins: number[] = [];
     const maxs: number[] = [];
 
-    paneConfigs.forEach((config) => {
+    for (const config of paneConfigs) {
       mins.push(convertToPixels(config.minSize, containerSize));
       maxs.push(
         config.maxSize === Infinity
           ? Infinity
           : convertToPixels(config.maxSize, containerSize)
       );
-    });
+    }
 
     return { minSizes: mins, maxSizes: maxs };
   }, [containerSize, paneCount, paneConfigs]);
@@ -357,7 +357,8 @@ export function SplitPane(props: SplitPaneProps) {
 
     const elements: JSX.Element[] = [];
 
-    paneConfigs.forEach((config, index) => {
+    for (let index = 0; index < paneConfigs.length; index++) {
+      const config = paneConfigs[index]!;
       const paneSize = currentSizes[index] ?? 0;
 
       const paneStyle: CSSProperties = {
@@ -400,7 +401,7 @@ export function SplitPane(props: SplitPaneProps) {
           />
         );
       }
-    });
+    }
 
     return elements;
   };
